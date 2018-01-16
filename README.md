@@ -407,7 +407,7 @@ Tratá de hacerlo de tal manera que al clickear en una playlist en el sidebar mu
   playlists.map(playlist => {
     return (
       <li key={playlist.id} className="playlist-item menu-item">
-        <Link to={`/playlists/${playlist.id}`}>{playlist.name}
+        <Link to={`/playlists/${playlist.id}`}>{playlist.name}</Link>
       </li>
     );
   })
