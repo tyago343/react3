@@ -536,6 +536,7 @@ Puntos extra si usas un componente error que compartís con el formulario del nu
 
 +++Un Consejo
 Esta el método que agrega una canción retornando algo? Recorda que `axios` requests retornan una Promesa!
++++
 
 ## Bonus
 
