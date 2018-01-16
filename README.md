@@ -453,7 +453,3 @@ componentDidMount () {
 |||
 
 Si llegas a este punto y pasas un tiempo testeando, podes llegar a notar un problema particular cuando cambiamos entre playlists - no parece que se actualiza! Continuá a la siguiente acción para ver que esta pasando aquí.
-
-
-
-
