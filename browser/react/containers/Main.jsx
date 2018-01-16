@@ -17,7 +17,7 @@ export default class Main extends React.Component {
       selectedAlbum: {},
       selectedSong: {},
       isPlaying: false,
-      playlist: [],
+      currentSongList: [],
       progress: 0,
       artists: [],
       selectedArtist: {
@@ -75,7 +75,7 @@ export default class Main extends React.Component {
   }
 
   start(song, songs) {
-    this.setState({ selectedSong: song, playlist: songs })
+    this.setState({ selectedSong: song, currentSongList: songs })
     this.loadSong(song.audioUrl);
   }
 
@@ -96,15 +96,15 @@ export default class Main extends React.Component {
   }
   
   findSongIndex() {
-    return this.state.playlist.findIndex(song => song.id === this.state.selectedSong.id);
+    return this.state.currentSongList.findIndex(song => song.id === this.state.selectedSong.id);
   }
 
   next() {
     let index = this.findSongIndex() + 1;
-    if (index >= this.state.playlist.length) {
+    if (index >= this.state.currentSongList.length) {
       index = 0 
     }
-    const song = this.state.playlist[index];
+    const song = this.state.currentSongList[index];
     this.setState({ selectedSong: song })
     this.loadSong(song.audioUrl)
   }
@@ -112,9 +112,9 @@ export default class Main extends React.Component {
   previous() {
     let index = this.findSongIndex() - 1;
     if (index < 0) {
-      index = this.state.playlist.length - 1 
+      index = this.state.currentSongList.length - 1 
     }
-    const song = this.state.playlist[index];
+    const song = this.state.currentSongList[index];
     this.setState({ selectedSong: song })
     this.loadSong(song.audioUrl)
   }

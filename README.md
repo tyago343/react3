@@ -1,545 +1,458 @@
-# React II
+# React III
 
 ## Intro
 
+### Forms & Inputs
+
+Software interactivo tiene input del usuario. A medida que la web se hizo más interactiva, estos inputs se volvieron increiblemente poderosos. jQuery, por ejemplo, proveyó una normalización muy necesitada para lidear con muchos tipos de inputs a través de diferentes ambientes. En ese momento, eso alcanzo, pero el input del usuario a crecio a tantas proporciones que demanda un mayor nivel de organización y modularidad.
+
+El problema principal es la sincronización de la data. ¿Cómo la data que el usuario provee se sincroniza con el backend, o incluso otras partes de la aplicación? Igual de difícil es la tarea de validar y manejar el estado de los formularios. ¿Es un campo invalido? ¿Ha sido editado? Si es así, ¿deberíamos mostrarle esto a el usuario?
+
 ### Objetivo
 
-Para este workshop, nos vamos a concentrar en rutas del front-end usando React Router. React Router provee una abstracción poderosa y elegante para cambiar las vistas que actualmente estamos haciendo con logica condicional en nuestro JSX. La mayor parte de este workshop va ser refactorear código existente.
-
-El único "feature" que vamos a añadir incluye ver a una artista: en vez de renderear los albumes y las canciones del artista simultaneamente en la misma vista, vamos a tener "tabs" para ALBUMS y SONGS, por lo que el usuario va a ver cada uno a la vez. Notece que el URL cambiará a medida que cambiamos el estado.
-
-
-### Single Page Applications
-
-Con la aparición de AJAX, la web se ha convertido en una plataforma para single-page applications. Dichas aplicaciones no refrescan y en cambio dinamicamente remplazan el contenido para simular cambios de página.
-
-Para desarrolladores web, estos cambios han traido nuevas oportunidades como tambien nuevos desafíos. En cierta forma, la forma de trabajo del desarrolador de la vieja web era genial. Podías cambiar las páginas con `<a href="...">`. Para enviar data, enviabas un form. A medida que SPAs se convierten en la norma, la experiencia de usuario mejoro, mientras que la de los desarrolladores se deterioro. Estas cosas las notas facilmente en grandes proyectos con JQuery.
-
-Frameworks de JavaScript mas comprensivos nacieron de este ambiente. Crecieron para incluir herramientas y patrones que resuelven desafios de manejar navegación en un sitio.
-
-### React Router
-
-[`React Router`](https://reacttraining.com/react-router/) es una de esas herramientas, una librería de terceros de React que nos permite establecer "rutas" en nuestra aplicación frontend que trenderice distintos componentes mientras actualizamos la URL. Con función para ir para atrás y todo!
-
-A través de `react-router` tenemos "rutas". En su forma mas simple, una ruta es una combinación de dos cosas, un URL y un component. En lo que nosotros respecta es un tipo de regla de nuestra aplicación: cuando la URL matchea, el componente ejecuta su método render.
-
-Y para ser claros, `react-router` es un 1000% una tecnología frontend. A pesar de que `react-router` interactua con URLs/rutas/navegaciñon, cambia literalmente nada de como funciona nuestro servidor. Para el final de este workshop, nuestra app va a estar dividida, donde alguna de las rutas las maneja el frontend, y otras el backend.
-
-## Empezando
+En la aventura de hoy, implementaremos playlists. Usuarios de la aplicación van a ser capaces de crear una playlist, buscar entre todas las playlists, ver una sola playlist, y agregar canciones a cualquier playlist. Vamos a aprender como lidear con inputs en React y manejar la data del form.
 
 ### Punto de Inicio
 
-El punto de inicio [está en este repo](http://github.com/atralice/react-workshop-II). Forkea el repo, clonalo a tu computadora y corre `npm install`.
+1. Forkea y clona [este repo](http://github.com/atralice/react-workshop-III)
+2. Corré `npm install`
 
-### Instalá y cargá
+## Filtro de Artistas
 
-Ahora vamos a hacer `npm install -S react-router react-router-dom`. `-S` es el shortcut de `--save`. El primer paquete `react-router` es donde se encuentra el core de la librería mientras que `react-router-dom` es lo específico para el browser, su contra parte es `react-router-native` que sería para dispositivos móviles.
+### App State vs UI State
 
-Para empezar a usar react-router, todo lo que necesitamos hacer es importar el componente que necesitamos en el `index.js`. Veamos un ejemplo...
+Hasta ahora, hemos aguardado todo el estado de nuestra aplicación centralizado en el componente `Main`. Esto es importante porque nos permite fácilmente transportar el estado de nuestra aplicación a los distintos componenetes que lo necesitan, y tambien ayudan hacer que nuestro componentes tontos permanezcan bonitos y tontos. Sin embargo, algunas veces sabemos que algunos tipos de estado van a estar localizados en un area particular de nuestra app - estados como la data de un formulario, timers, pequeñas animaciones, etc. Sería una pena saturar ya el bastante ocupado componente `Main`con el estado de un solo input.
 
-### Ejemplo
+Algunos desarrolladores les gusta hacer la distinción entre lo que podríamos llamar el estado de nuestra aplicación (`app state`), o el estado que es central a nuestra app y puede estar disponible a varios componentes diferentes, y el estado de la interfaz de usuario(`UI state`) o estado local(`local state`) - este sería el estado en el que solo necesiamos manejar UI en un solo lugar - cosas como forms van a ser considerados normalmente como estado local.
 
-Imaginemos que tenemos dos componentes el primero es bastante simple:
+Escribamos un componente que maneja estado local. Vamos a añadirle u feature a nuestro componente `Artists` que nos va a permitir comenzar a escribir el nombre de un artista en un input, y la lista de artistas se va a filtar para solo los artistas cullo nombre matchea la entrada
+
+### Composición
+
+El filter que escribamos se tiene que ver algo así:
+
+#### Antes de typear algo en el
+
+![screenshot](screenshot1.png)
+
+#### Luego de typear una entrada
+
+![screenshot](screensho2.png)
+
+Tu primer instinto puede ser ir y modificar el componente `Artist`. Sin embargo, el componente del artista ya hace su trabajo bastante bien: si le damos una `props.artists`, va a renderizar nuestra lista de artistas. ¿Por qué cambiarla?
+
+En cambio, tomemos ventaja de la naturaleza funcional de react y hagamos una _composición_. Sabemos como se ve esto con funciones regulares para este punto:
+
+
+```js
+// la función addSomething es muy buena en sumar x e y
+function addSomething (x, y) {
+  return x + y;
+}
+
+// La función logSomething es muy buena en loggear z a la consola
+function logSomething (z) {
+  console.log(z);
+}
+
+// componenmos su funcionalidad a una sola función
+function addAndLog (x, y) {
+  logSomething(addSomething(x, y));
+}
+```
+
+De la misma forma, vamos a escribir un nuevo componente con estado, que maneje el valor del input, filtre a los artistas del arreglo, y pase a los artistas filtrados al componente `Artist`.
+
+### FilterableArtists
+
+Crea un nuevo componente presentacional llamado `FilterInput` - agregalo al directorio `react/components/`:
 
 ```JSX
-// Hola.jsx
-
 import React from 'react';
 
-const Hola = () => <p>Hola</p>;
+const FilterInput = (props) => {
+  return (
+    <form className="form-group" style={{marginTop: '20px'}}>
+      <input
+        className="form-control"
+        placeholder="Enter artist name"   
+      />
+    </form>
+  );
+}
 
-export default Hola;
+export default FilterInput;
+```
+Ahora vamos a escribir nuestro primer nuevo componente contenedor (lease: "con estado") a nuestro directorio `react/containers/` - dale un nombre como `FilterableArtistsContainer.jsx`. Este componente con estado va a componer nuestro `FilterInput` y `Artists` juntos al manejar el estado del input form, y filtrando de la lista de artistas que le pasa a `Artists`.
+
+**Pero primero**, aprendamos sobre el `SyntheticEvent` de React!
+
+### SyntheticEvent
+
+Cuando pasamos una función callback a un event listener como `onClick`, React va a pasar implicitamente un objeto `event` a el como primer argumento.
+
+Sin embargo, React es bastante inteligente con este objeto. Porque diferentes browsers tienen la desafortunada tendencia de pasar distintos tipos de eventos, React envuelve el evento nativo del browser con una clase suya, llamada `SyntheticEvent. Podés acceder muchas de esos campos que haz visto antes cuando trabajamos con el DOM y jQuery, pero es un poco distinto (chequá los [docs](https://reactjs.org/docs/events.html) para más información).
+
+La parte tricky de `SyntheticEvent` es que React agrupa todos los eventos al mismo objeto `SyntheticEvent`. Esto siginifica que `SyntheticEvent` es un solo objeto que React muta en el runtime. Esto es una gran victoria en performance, pero también significa que no podés usar el objeto event por si mismo asincrónicamente (el cual, no olvidemos, incluye `setState`). Esto significa que una vez que tenés el `SyntheticEvent`, deberías agarrar cualquier valor que necesites antes de acer algo async, de otra forma, vas a terminar un con un bug en tus manos.
+
+Por ejemplo, si queremos tomar el valor del input, vamos a querer hacer algo así:
+
+```js
+// con seguridad tomamos el valor del string del event.target
+this.setState({ inputValue: event.target.value });
+```
+**No querríamos** hacer algo como esto:
+
+```js
+// NO HAGAS ESTO
+this.setState({ input: event });
 ```
 
-El segundo un poco más complejo:
+Si hiceramos esto, para el momento que tratasemos de extraer el valor, probablemente se haya ido!
 
-```JSX
-// App.jsx
+### Guía
 
-import React from 'react';
-import Hola from './Hola';
-import { Route } from 'react-router-dom';
+Deberías estar equipado con el conocimiento que necesitas para implementar el filtro. Tratá de hacerlo por tu cuenta primero! Si te trabás o necesitas mayor dirección a través del proceso, aquí hay algunos pasos para guiarte:
 
-const App = () => (
-  <div>
-    <p>Esto es texto normal</p>
-    <Route path="/hola" component={Hola} />
-  </div>
-);
-
-export default App;
-```
-
-Aquí podemos ver que el componente esta renderizando un texto pero además esta renderizando un componente `Route`. Este componente va a renderizar el componente `Hola` cuando el path `/hola` matchie con la URL.
-
-Ahora para hacer funcionar esto tenemos que configurarlo de la siguiente manera:
-
-```JSX
-// index.js
-import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
-import { render } from 'react-dom';
-import App from './App';
-
-render(
-  <BrowserRouter>
-    <App />
-  </BrowserRouter>,
-  document.getElementById('root')
-)
-```
-
-Aquí estamos encerrando nuestra aplicación dentro del componente `BrowserRouter` que nos va a permitir usar la `history` API del browser.
-
-Fijate en la app de abajo modificando el url lo que ves en la ruta `/` y en la ruta `/hola`.
-
-@sandbox=14jwr579wj
-
-
-## Construyendo un Router
-
-### Seteando el Router
-
-En nuestro `index.js`, importa `BrowserRouter` como vimos en el ejemplo y colocalo dentro del `ReactDOM.render`.
-
-
-### Definiendo Nuestra Ruta Principal (/)
-
-La primer path `Route` que deberíamos definir lo que un usuario debería ver cuando van a la ruta principal nuestra de nuestra app (`/`). Tipicamente, el componente que le damos a esta ruta provee el layout que sera común para toda nuestra app. Cada otra ruta va a ser hija de esta ruta principal.
-
-Escribi un `Route` con un path a `/` dentro de `BrowserRouter`. Qué componente deberíamos pasar como el prop `component`? Bien, este componente va a ser el padre de todos los otros componentes en nuestra aplicación... ¿cuál componente estaba haciendo ese rol antes?
-
-|||
-
-Usa el `Main`!
-
-```JSX
-<BrowserRouter>
-  <Route path="/" component={Main} />
-</BrowserRouter>
-```
-
-|||
-
-Chequeá lo que hiciste con la solución y asegurate que todo sigue rendereando de la misma forma que lo hacia antes (no va a haber ninguna diferencia visible aún, pero nada debería haberse roto tampoco). Entonces estas listo para continuar!
-
-### Nuestro Encuadre
-
-Nuestro componente `Main` esta seteado para ser el padre de todos los componentes en nuestra aplicación como era antes. Sin embargo, necesitamos identificar el espacio en el método `render` de nuestro componente `Main` donde las rutas hijas van a renderizar eventualmente.
-
-Abrí `Main` y fijate su método `render`. Pensa sibre el cambio de vista que hacemos ahora - que JSX representa el "encuadre" donde nuestro cambio de vista (la "imagen") ocurre? Discutelo con tu compañero, y luego continua leyendo para ver sobre que necesitamos hacer para renderizar esa "imagen".
-
-|||
-El componente `Sidebar` y el `Footer` estan siempre presentes a pesar de la vista, por lo tanto ellos y el JSX que los rodea van a ser nuestro "encuadre". Nuestra imagen por lo tanto sera el espacio entre esos div conteniendo la expresión ternaria que condicionalmente renderea los componentes `Album` y `Albums`.
-|||
-
-### Rutas Hijas
-
-### `Route` props
-
-Hasta ahora vimos que el componente Route acepta las props `path`, donde ponemos un string con la URL que queremos que matchie, `component` donde le pasamos el componente que queremos que renderice cuando la URL matchea, pero también este acepta otras dos formas de decidir que renderizar. 
-
-La primera y una de las que más vamos a utilizar es `render` esta a diferencia de `component` acepta una función que va a ejecutar y va insertar lo que devuelve dentro de la vista, sin correr `React.createClass` lo que nos va a permitir pasar componentes que no necesitan todas las cosas que otros componentes como `Main` necesitan (ej. lifecycle hooks).
-
-Lo vamos a utilizar principalmente para dos casos:
-
-1. Cuando queremos hacer un inline render:
-
-```JSX
-<Route path="/error" render={() => <p>Se encontró un error </p>} />
-```
-
-2. El segundo caso va a ser para cuando necesitamos pasarle props a un componente:
-
-```JSX
-<Route path="/profile" render={() => <Profile name={user.name} />}>
-```
-
-Estos dos ejemplos se pueden hacer sin problema usando el prop `component` pero estamso inecesariamente usando la función `React.createClass` sobre funciones que no lo necesitan.
-
-La segunda forma es `children` este funciona de forma parecida a `render` pero con una particularidad, este siempre renderea lo que le pasemos sin importar si la URL coincide o no. Más adelante veremos con más profundidad esta.
-
-
-### Colocando la "Imagen" dentro del "Encuadre"
-
-`react-router` es muy intuitivo al momento de agregar rutas. Simplemente colocamos la ruta en el lugar que queremos que se renderice, con su path y su componente y ¡voilà! ya tenemos nuestra ruta funcionando.
-Sustituí el ternario y agrega dos rutas, la primera `/albums` y la segunda `/albums/:id` que rendericen nuestros componentes `Albums` y `SingleAlbum`, pasale los props que necesiten.
-
-+++Pasando props
-Recorda que para pasar los props vamos a tener usar `render` en vez de `component`.
-+++
+1. En tu `Main.jsx`, en vez de renderizar `Artists` cuando la url es `/artists`, renderizá el `FilterableArtistsContainer`.
 
 |||
 ```JSX
-<Route path="/albums" render={() => <Albums albums={albums} selectAlbum={this.selectAlbum} /> } />
-<Route path="/albums/:id" render={() => <SingleAlbum selectedSong={selectedSong} start={this.start} album={selectedAlbum} />} />
-```    
+<Route path="/artists" exact render={() => <FilterableArtistsContainer artists={artists} />} />
+```
 |||
 
-Ahora si vamos a la ruta `/albums` vamos a ver todo funcionando correctamente. Pero si vamos por ejemplo a la ruta `/albums/1`, por ejemplo tenemos un problema. Al parecer el componente `Albums` se sigue renderizando y si vemos el final de la página también seguramente veamos el componente `SingleAlbum`. Esto sucede porque por defecto `react-router` solo va a fijarse si el `path` coincide hasta ese punto con la URL, por lo tanto `/albums/1` coincide con `/albums` y `/albums/:id`. Para evitar este comportamiento simplemente podemos agregarle el prop `exact` a la primera ruta para decirle que solo matchie cuando es exactamente igual.
+2. El `FilterableArtistsContainer` debería renderear ambos el `FilterInput` y el componente `Artists`.
 
-Ahora ambas rutas nos deberían mostrar el componente correcto. Pero seguimos teniendo un problema, `SingleAlbums` no parece tener ningún album seleccionado, eso lo solucionaremos mas adelante, ahora solucionemos un problema mayor.
-
-### <Redirect>
-
-Ahora tenemos un problema, cuando nos dirijimos a la ruta `/` no hay ningun componente que renderiza, por lo que vamos a querer que cuando alguien vaya a la página principal de nuestra aplicación nos redirija a `/albums`
-
-Para eso vamos a usar el componente `Redirect`. Este componente se puede usar de dos formas. La primera forma es la siguiente:
-
+|||
 ```JSX
-<Redirect to="/albums" />
+// In FilterableArtistsContainer.js
+render () {
+  return (
+    <div>
+      <FilterInput />
+      <Artists artists={/**TODO**/} />
+    </div>
+  )
+}
 ```
+|||
 
-En este caso siempre que este `Redirect` se renderice automaticamente va a redirigir a albumes, esto puede ser problematico si no controlamos cuando este `Redirect` se debería renderizar, pero puede ser muy útil para crear redireccionamientos condicionados, por ejemplo:
-
-```JSX
-album ?
-    <Album album={album} />
-    :
-    <Redirect to="/NotFound" />
-```
-
-En este ejemplo si tenemos un album devolvemos el componente `Album` pero si no lo redirigimos a la página `/NotFound`. Bastante copado no?
-
-La otra posiblidad es la siguiente:
-
-```JSX
-<Redirect from="/" to="/albums" />
-```
-
-Aquí le estamos diciendo con el prop `from` que cuando matchee esa ruta redirija a la ruta en el prop `to`, este va ser el caso que nos va a servir para nuestro problema.
-
-Si todo funciona bien, deberías ser ridirijido de `http://localhost:1337/` a `http://localhost:1337/albums`.
-
-Pero tenemos un problema una vez que llegamos a `/albums` parece que entramos en un loop donde nos sigue redirigiendo a `/albums` es mas si abres la consola seguramente veas este error `Warning: You tried to redirect to the same route you're currently on: "/albums"`.
-
-Este error ocurre porque la ruta `/` de nuestro `from` matchea con `/albums` también, algo muy parecido al problema que teniamos con las rutas antes que tuvimos que agregarle el `exact`, pero tristemente el `Redirect` no tiene esta prop, por lo que para solucionar esto vamos a tener que agregar algo mas el `<Switch>`. 
-
-`<Switch>` es un componente de React que va a rodear nuestras rutas, y va a buscar solo la primer coincidencia, algo mas parecido a lo que estabamos acostumbrados con `express`. Una vez que encuentra la primer coincidenci, va a renderizar esa ruta y no va a buscar más. Por lo tanto agrega el `<Switch>` alrededor de las rutas. Ahora el el lugar donde este el `<Redirect>` es importante, te imaginas qué pasaría si estuviese por encima de la ruta de `<Albums>`. 
-
-
-### Rutas con Parametro
-
-Es momento de setear nuestro ruta de un solo album! La diferencia aquí es que ahora nuestra url va a tomar parametros correspondientes al id del album que queremos ver. Esto es bastante similar a la forma que creamos rutas en Express: `/albums/:id`.
-
-> Ten en cuenta que esta ruta es hermana de la ruta de Albums. El hecho de que el path se construye con `/albums` parece implicar un tipo de relación padre-hijo, pero recuerda que el componente SingleAlbum y el componente Albums aparecen en el mismo espacio. Relaciones padre-hijos son definidas por donde es renderizado el componente en la vista no por el `path` de la ruta.
-
-No hemos usado ninguno hasta ahora, pero el componente `Route` estan dando a los componentes que renderiza algunos props especiales! Cundo tenemos la función del render dentro del prop, esta recibe tres props, `match`, `location` y `history`. Por ahora vamos a usar la primera, así que veamos que hace.
-
-### Prop `match` 
-
-Cuando un `path` matchea la URL se crea un objeto `match` que es pasado como prop al componente que se renderiza. Este objeto tiene las siguientes propiedades:
-
-- `match.url`: Aquí se muestra el url que matcheo con el path, nos sirve para anidar links.
-- `match.path`: Aquí se muestra el path de esa ruta, nos sirve para anidar rutas.
-- `match.params`: Es un objeto con los valores de los parametros de la ruta, por ejemplo una ruta que tiene `/users/:id` el objeto seria { id: 3 } 
-- `match.isExact`: Es un booleano que va ser `true` el url matcheo el path exactamente.
-
-Como vemos podemos usar la propiedad `params` dentro de SingleAlbum para saber el id del album que tenemos que mostrar.
-  
-### Usando Params
-
-Ve a nuestra definicion de rutas y pasale los props que recibe el método `render` de la ruta `/albums/:id` a un `console.log`, algo asi:
-
-```JSX
-<Route path="/albums/:id" render={(props) => console.log(props)} />
-```
-
-Luego escribe algo como esto `http://localhost:1337/#/albums/1` en la url. Seguramente recibas un error enorme, pero ignora eso, fijate lo que se loggeo en consola. Vemos otras propiedades del Router. Pero la que nos interesa es `match`, expandila y mira la propiedad `params`, ahi vamos a ver el album id!
-
-Usa la prop `match.params` para enviarle el `albumId` a `SingleAlbum` para que podamos buscar el album apropiado y ponerlo en el estado cuando naveguemos a la ruta. Cómo hacemos esto? De la misma forma que buscamos información cuando un componente carga.
-
-+++Necesito ayuda...
-Recuerda que la forma apropiada de buscar información cuando el componente carga es usando `componentDidMount`. Podemos convertir el componente `Album` en una clase y cargar el album usando ese hook.
-
-Seguramente estas pensando... **¿esto no rompe la Ley de el Componente Tonto?** Recordá que la ley dice que un componente debe ser lo mas tonto posible - y desfortunadamente, ahora mismo no tenemos otra forma, así que esta vez lo vamos a pasar. Mas adelante vamos a ver una mejor forma - no te preocupes! 
-+++
-
-+++Necesito un poco mas...
-Fijate las props que el componente `SingleAlbum` recibe. Seguramente nos esta faltando una prop ahora, necesitamos que también reciba el método `selectAlbum` para que lo podamos usar!
-+++
+3. Pon un espacio en el estado del `FilterableArtistsContainer` para contener el valor actual entrado en el input
 
 |||
 ```js
-componentDidMount () {
-  this.props.selectAlbum(this.props.albumId);
+this.state = {
+  inputValue: ''
+};
+```
+|||
+
+4. Escribe un método que vaya a coleccionar el valor del input cuando el input cambia y setealo el estado. Pasalo como una prop a `FilterInput` y daselo al listener apropiado.
+
+|||
+```JSX
+// Escribe el método así en FilterableInputContainer.jsx:
+handleChange (evt) {
+  const value = evt.target.value;
+  this.setState({
+    inputValue: value
+  });
+}
+
+render () {
+  return (
+    /** .... */
+    <FilterInput handleChange={this.handleChange} />
+    /** .... */
+  )
+}
+
+// y luego agregalo asi en FilterInput.jsx:
+<input onChange={props.handleChange} />
+```
+|||
+
+5. En el método render de `FilterableArtistsContainer`, usa el valor del input para filtrar el arreglo de artistas para pasarle al componente `Artists`.
+
+
+||| 
+
+```JSX
+render () {
+  const inputValue = this.state.inputValue;
+  const filteredArtists = this.props.artists.filter(artist =>
+    artist.name.match(inputValue));
+  return (
+    /** ... */
+    <Artists artists={filteredArtists} />
+   /** ... */
+  );
 }
 ```
 |||
 
-<!--
-### Usando los parámetros
+## New Playlist
 
-La solución que parece más facil es que en el componente `SingleAlbum` vamos a tener que usar un lifecycle hook para que cuando cargue nuestro componente podamos ejecutar la función `selectAlbum` con el id del album dentro del parametro de la URL. Un componente que era una fiunción presentacional vamos a tener que convertirlo en una clase para poder utilizar sus Hooks. Finalmente se vería algo así:
+### New Playlist Component
 
-```JSX
-class SingleAlbum extends React.Component {
-  componentDidMount() {
-    this.props.selectAlbum(this.props.match.params);
-  }
-
-  render() {
-    /* El mismo render que teníamos */
-  }
-}
-```
-
-A pesar que esta solución se ve simple, estamos haciendo un error en nuestro diseño. Estamos rompiendo la **Ley de los Componentes Tontos**, por lo que un componente presentacional tiene lógica de la aplicación y por lo tanto es una clase a pesar de no tener estado.
-
-Otra solución es un poco mas complicado, pero mucho mas escalable y reutilizable. Pero para eso tenemos que ver que son los High-Order Components
-
-
-### High-Order Components
-
-Para esta altura ya hemos visto muchas veces High-Order functions. Esto significa funciones que toman funciones o devuelven nuevas funciones, por ejemplo `map`, que toma una función como argumento.
-
-Este concepto en JavaScript es clave, y ese mismo concepto lo podemos llevar a los componentes de React. Un componente que toma un componente y devuelve un componente. Si lo pensamos `Route` en si es esto, ya que toma un componente y este es renderizado cuando cierto path coincide. Nosotros podemos sobre esto también escribir nuestros propios High-order component.
-
-Por lo tanto imaginense si podríamos hacer un componente que funcione parecido a Route, solo que tome la función que queremos ejecutar cuando entramos a esa ruta, como si fuese un hook, algo así:
+1. Agrega el siguiente JSX a tu componente `Sidebar` (Justo por debaje del segundo par de `<section>`tags). Ese tag `<hr />`, si no estas familiarizado con él, es solo una linea horizonatal "horizontal rule" para separar tu `nav` del `button`
 
 ```JSX
-<RouteWithHook
-  path="/albums/:id" 
-  onEnter={selectAlbum} 
-  component={() => <SingleAlbum selectedSong={selectedSong} start={this.start} album={selectedAlbum} />} 
-/>
-```
-Este componente que vamos a escribir nosotros siempre va a ejecutar la función dentro de `onEnter` cuando matchie la ruta, y lo vamos hacer con la misma lógica con lo que hicimos antes, el `onEnter` se va a ejecutar en el `componentDidMount`.
-
-Así que crea un nuevo archivo `/components/RouteWithHook` y veamos como escribir este componente.
-
-### <RouteWithHooks> 
-
-Pensemos la lógica de el problema. `RouteWithHook` va a funcionar similarmente a `Route` por lo que va a recibir un `path` y un `component` pero además va a recibir una funcion `onEnter` que se ejecute cuando la ruta matchea.
-
-Así que para definir `RouteWithHook` vamos a simplemente devolver un `Route` con el `path` al mismo que recibimos por props, que renderice un componente especial que vamos a llamar `HigherComponent` que vamos a definir también que se encargue de ejecutar `onEnter` en su `componentDidMount` y renderice el componente que nosotros queríamos.
-
-Recuerda como lo queremos utilizar:
-
-```JSX
-<RouteWithHook
-  path="/albums/:id" 
-  onEnter={selectAlbum} 
-  component={() => <SingleAlbum selectedSong={selectedSong} start={this.start} album={selectedAlbum} />} 
-/>
-```
-
-Intenta resolverlo por tu cuenta, es díficil pero posible, si estas muy perdido anda directo a la solución pero no avances sin estar completamente seguro de lo que esta haciendo, discutilo con tu compañero y pidan ayuda si no logran entender lo que esta pasando.
-
-|||
-
-```JSX
-// Creamos nuestro componente que se va a encargar de llamar al Hook
-class HigherComponent extends React.Component {
-  // El componente ejecuta el Hook cuando es montado
-  componentDidMount() {
-    // Ejecuta el onEnter pasandole todos los props
-    this.props.onEnter(this.props)
-  }
-
-  render() {
-    // Extraemos el componente de los props y lo renombramos Component
-    // Esto lo hacemos porque recuerda que todos los componentes para que JSX los entianda tienen que empezar con mayuscula
-    const { component: Component } =  this.props
-    // Simplemente retornamos nuestro componente
-    return <Component />;
-  }
-}
-
-// Ahora definimos RouterWithHook
-// Va tomar los tres props necesarios para que funcione
-const RouteWithHook = ({ path, component, onEnter }) => (
-  // Retornamos la Route con el path especifico y renderizamos el HigherComponent pasandole el objeto de match
-  // que vamos a necesitar para saber el valor de los parametros
-  <Route 
-    path={path} 
-    render={({ match }) => <HigherComponent onEnter={onEnter} component={component} match={match} /> } />
-);
-
-export default RouteWithHook;
-```
-Este código puede causar dolor de cabeza pero es importante que no sigas hasta entender que es lo que esta haciendo.
-|||
-
-Ahora que tenemos `RouterWithHook` definida tenemos un componente que siempre que matchie la ruta ejecute una función! Lo increible de la programación funcional en React!
-
-### A mostrar un album
-
-Ahora que ya tenemos nuestro `RouteWithHook` agregalo a nuestras rutas, puedes utilizar el ejemplo de la sección anterior. Pero aún tenemos un problema, nuestra función original de `selectAlbum` recibía como parámetro directamente el id del álbum a buscar, pero RouterWithHook va a ejecutar la función pasando todos los props, ya que como queremos que sea reutilizable, no sabemos que cosa realmente vamos a querer usar cada vez que lo usamos. 
-
-Modifica la función `selectAlbum` para que acepte las props y busque en `match.params.id` el album que nos interesa. 
--->
-## Usando Links
-
-### El Componente Link
-
-Actualmente podemos cambiar la vista de nuestra app cambiando la url, pero nuestros usuarios no van a querer hacer eso, ellos quieren apretar links! Es momento de trabajar en el componente `Link` de `react-router` en nuestra app!
-
-El componente `Link` por si mismo es un wrapper sobre el element `<a>` - le pasamos una prop llamada `to` que va a funcionar de forma similar a `href`. Por ejemplo:
-
-```JSX
-<Link to="/albums">Go to Albums</Link>
-<Link to={`/albums/${album.albumId}`}>Go to an Album</Link>
-```
-
-Hasta podes darle estilo a los componentes de la misma forma que los tags `<a>` usando `className` y `style` - se lo va a pasar al `<a>` que renderiza.
-
-### Navegando
-
-Linkemos las cosas! 
-
-- Clickear en un album individual debería cambiarte a la vista del album.
-- Clickear "Albums" en el `Sidebar` debería renderizar todos los albumes otra vez.
-
-Seguramente notes algunas cosas copadas a medida que renderices:
-
-- Cuando clickeas un album individual, no necesitas ejecutar la funcion `selectAlbum` en el componente `Albums`! El `componentDidMount` del componente `Album` se va a ocupar de todo cuando cambies la url!
-- Ya tampoco necesitas la función `deselectAlbum` para nada! Antes, siel componente `SingleAlbum` o `Albums` se mostraba dependia de si `this.state.currentAlbum.id` era verdadero - ahora se basa en su url!
-
-## Artist
-
-### Agregando Artistas
-
-Practiquemos nuestras habilidades de navegación añadiendo un nuevo feature a Juke - la habilidad de ver nuestra colección de música por artistas! Vamos a crear un nuevo componente `Artists` (plural) para ver la lista de todos los artistas, y luego crear un componente `Artist` (singular) para ver los albumes y canciones de un solo artista. 
-
-### Estado
-
-Lo primero que deberíamos hacer es colocar en nuestro estado la lista de todos los artistas, y un lugar para tener nuestro artista seleccionado. 
-
-|||
-```js
-{
-  // resto del estado...
-  artists: [],
-  selectedArtist: {},
-}
-```
-|||
-
-### Nuevos Componentes
-
-Nuestra primer tarea es mostrar una lista de los artistas cuando el url matchea `/artists`. Primero, setiemos nuestro nuevo componente `Artists`.
-
-1. Crea un nuevo componente con el siguiente JSX:
-
-```JSX
-<div>
-  <h3>Artists</h3>
-    <div className="list-group">
-    {
-      props.artists.map(artist => {
-        return (
-          <div className="list-group-item" key={artist.id}>
-            {/* Determinaremos donde linkear luego */}
-            <Link to="">{ artist.name }</Link>   
-          </div>
-        )    
-      })
-    }
-  </div>
-</div>
-```
-
-2. Deberíamos actualizar nuestro `Sidebar` con un `Link` al nuevo componente:
-
-```JSX
+<hr />
 <section>
-  <h4 className="menu-item">
-    <Link to={/**rellename**/}>ARTISTS</Link>
+  <h4 className="text-muted">PLAYLISTS</h4>
+  <h4>
+    <Link className="btn btn-primary btn-block" to={/**todo!*/}>
+      <span className="glyphicon glyphicon-plus"></span> PLAYLIST
+    </Link>
   </h4>
 </section>
 ```
 
-3. Y por supuesto vamos a necesitar un nuevo `Route` en `Main`. Ahora ve y escribe un `Route` que muestre el componente `Artists` cuando la url sea `/artists`.
-4. Finalmente necesitamos conseguir nuestros artistas del servidor. Donde deberíamos hacer el fetch? En el mismo lugar donde hicimos el pedido `axios` para obtener todos nuestros albums! Agrega un nuevo pedido `axios.get` para obtener todos nuestros artistas colocalos en el estado, y envialos como props a el componente `Artist`!
+2. Crea una `Route` y un componente presentacional para el `NewPlaylist`. La vista debería incluir un campo para entrar el nombre de la playlist, y también un botón para submitearla. Una vez que lo hayas hecho asegurate de `Link`ear ese "+ PLAYLIST" button para que nos navegue ahí.
 
-### Ver Uno
-
-Clickear en un elemento `<Link>` en la lista de artistas debería cambiar la url para que sea `/artists/:id` y cambiar la vista para mostrar la información del artista!
-
-1. Crea el componente `Artist` con el siguiente JSX (temporario).
-
-```html
-<div>
-  <h3>ARTIST NAME</h3>
-  <h4>ALBUMS</h4>
-  <h4>SONGS</h4>
++++JSX Posible
+```JSX
+const NewPlaylist = function () {
+return (
+<div className="well">
+  <form className="form-horizontal">
+    <fieldset>
+      <legend>New Playlist</legend>
+      <div className="form-group">
+        <label className="col-xs-2 control-label">Name</label>
+        <div className="col-xs-10">
+          <input className="form-control" type="text"/>
+        </div>
+      </div>
+      <div className="form-group">
+        <div className="col-xs-10 col-xs-offset-2">
+          <button type="submit" className="btn btn-success">Create Playlist</button>
+        </div>
+      </div>
+    </fieldset>
+  </form>
 </div>
+)}
 ```
-
-2. Una vez que eso esta hecho crea una nueva `Route` en `Main.jsx`.
-3. Ahora, en tu componente `Artists`, asegurate que el `Link` de cada artista lleva a la url del id de cada uno.
-
-+++Sigo viendo el componente `Artists` cuando cambia la URL
-Recordás que el path de las `Route` buscaban la coincidencia de la URL hasta ese punto, y no se fijaban lo que continuaba a menos que agreguemos la prop `exact`. 
 +++
 
-Continua una vez que confirmas que clickear en el nombre de un artisa en nuestra lista causa que la url se actualice y nuestra vista cambie para mostrar el componente de arriba.
+### New Playlist Container
 
-### Carga uno
+El componente `NewPlaylist` es un form, por lo que escribamos otro componente `container`, para contener el valor actual del input. Esto es lo que necesitaremos:
 
-Carguemos el resto de la información del artista se debería ver algo así
+1. Un campo en el estado para el valor del input
+2. Un metodo para setear el valor del input en el estado cuando el input cambia (igual que en el componente `FilterInput`).
+3. Un método para hacer algo con el valor del input cuando el form es submiteado (esto va a ser pasado como el prop `onSubmit` del elemento `<form>` - **no** del `<button>`).
 
-![screenshot](screenshot4.png)
+Por ahora, tratemos de que cuando submiteamos el form, simplemente hacemos `console.log` del valor en el form.
 
-En orden de conseguir esa información del servidor, vas a necesitar ir a varias rutas: una para el artista, otra para los albumes del artista y otra para las canciones del artista. Deberíamos hacer estos pedidos de la misma forma que pedimos la información  de un solo album, recuerdas lo que hicimos?
-
-+++Cargando la data del artista
-Vas a querer ir a `/api/artists/:artistId`, `/api/artists/:artistId/albums` y `/api/artists/:artistId/songs`. Una buena técnica sería usar `Promise.all`, para construir el `selectedArtist` cuando llega toda la información
++++¿Por qué mi pantalla se refresca cuando hago un submit?
+Recuerda que el comportamiento nativo de HTML para un `onsubmit` listener va a causar la pantalla se refresque. Podés prevenir esto al invocar `preventDefault`en el objeto del evento.
 +++
 
-+++Donde cargar la data
-Seguí el patrón de seleccionar un solo album para crear una función `selectArtist` en `Main` que use `axios.get`. Pasa esta función como prop a el componente `Artist`(singular), y toma el id del artista de nuestro `props.match.params` en `componentDidMount`.
-+++
+### Componentes Controlados
 
-También la UI se ve bastante familiar...
+Para este punto, deberías estar loggeando el valor del input a la consola. Es una pena que el campo no se limpia cuando clickeamos el botón de submit. Podes tratar de setear el valor del input en tu estado a un string vacío cuando submiteamos,pero vas a notar que esto no afecta realmente el valor en el campo del input. Para ponerlo de una forma - cambios a el input estan actualizando nuestro estado, pero cambios en nuestro estado no estan actualizando el campo del input! ¿Cómo podes cambiar eso?
 
-+++Aproximación
-Los detalles del artistas esta compuesta de la vista de `Albums` y de la vista de `Songs. Podrías copiar y pegar... pero ya sabemos que significa cuando copiamos y pegamos. Quizas deberíamos re-usar nuestros componentes presentacionales? Porque son lindos y tontos, todo lo que necesitamos hacer es importarlo y pasarle las props que necesitan...
-+++
+En el lenguaje de React un [`componente controlado`](https://reactjs.org/docs/forms.html#controlled-components) es el campo de un form cuyo valor es manejado por el estado. Esto es muy fácil de hacer! Todo lo que necesitamos es pasarle el valor a nuestro estado como el prop `value` en el elemento `input`!
 
-## Escribiendo Sub-rutas
+Tratña esto para que cuando clickeemos el botón de submit, el input se limpie!
 
-### Objetivo
-
-Practiquemos más! Ahora, todos nuestros componentes son técnicamente sub-rutas de la ruta `/`, pero esas rutas pueden también tener sus propias sub rutas! Modifiquemos el componente `Artist`(singluar) para que en vez de mostrar los albumes y las canciones en una vista, primero muestre dos `Link`s, y dependiendo en cual clickie el usuario, mostraremos o los albumes del artista o las canciones del artista.
-
-### Setup
-
-Remplazá el JSX del componente de un artista con algo como esto:
+|||
+Vas a necesitar parar el valor del input que estas manejando en el estado (llammemoslo `inputValue`). Luego, en tu componente `NewPlaylist`...
 
 ```JSX
-return (
-  const { selectedArtist } = this.props;
-<div>
-  <h3>{ selectedArtist.name }</h3>
-  <ul className="nav nav-tabs">
-    <li><Link to={/**hacer**/}>ALBUMS</Link></li>
-    <li><Link to={/**hacer**/}>SONGS</Link></li>
-  </ul>
-  {/* Aquí vamos a armar nuestras rutas*/}
-</div>
-)
+<input value={props.inputValue} />
 ```
 
-### Albumes del Artista
+Ahora el valor del input va a ser el mismo que el de `inputValue` en el estado. Entonces, para obtener que el valor del input se limpie, solo necesitas limpiarlo en tu estado!
+|||
 
-1. Agrega una nueva ruta dentro del componente `Artist` donde el path sea `/artists/:id/albums`. Pero recuerda algo! Es una mala practica escribir rutas anidadas de esta forma, mejor es usar la propiedad `path` dentro del prop `match` de esta forma si nuestra ruta principal llegase a cambiar, esta se vería modificada automaticamente, y nos evitaría errores, así que usa: `\`${match.path}/albums\`` para generar la ruta.
-2. Ahora para el Link vamos a hacer algo parecido. Nosotros no sabemos cual va a ser el valor del id en la url para poder crear el link harcodeado, por lo que vamos a usar `match.url` para generar correctamente la url anidada. 
 
-### Canciones del Artista
+### Deshabilitar cuando es invalido
 
-Haz lo mismo para mostrar las canciones del artista!
+Agreguemos validaciones. Dado que estamos manejando el valor del input en nuestro estado, esto no debería ser muy difícil. El texto del input debería ser requerido y no tener más de 16 carácteres. El botón de submit debería estar deshabilitado si cualquiera de estas validaciones falla.
 
-## Bonus
++++Aproximación
+No te olvides que los elementos `button` tienen un prop llamado `disabled`, el cual va a aceptar un booleano. Suena como que podes manejar algun estado en tu contenedor o usar el valor del prop que controla el valor del input.
++++
 
-### Links Activos
+### Advertencias de Validación
 
-Mira [este ejemplo de la Documentación de react-router](https://reacttraining.com/react-router/web/example/custom-link). Es un gran ejemplo de como agregar Links activos a nuestro sidebar. Intenta implementar lo mismo agregandole la clase active a Link cuando estemos en esa ruta.
+Mostremos o escondamos mensajes de advertencias descripitivas cuando el campo es invalido. Por ejemplo, el siguiente JSX es un mensaje de advertencia que podemos mostrar si el usuario no a entrado un nombre a la playlist:
 
-### Not Found
+```html
+<div className="alert alert-warning">Please enter a name</div>
+```
 
-Que pasa si tratamos de navegar a una ruta que no existe? Estaría bueno mostrar un mensaje que lleve a los usuarios a donde tienen q ir. [Como podemos especificar una ruta para cuiando no encontramos un match](https://reacttraining.com/react-router/web/example/no-match)?
+Asegurate que solo mostremos el error después que hayan editado el campo!
+
+### Crear
+
+En vez de loggear cuando submiteamos el form, creeamos una nueva playlist. Escribe estos métodos en tu `NewPlaylistContainer` por ahora (vamos a moverlo en poco tiempo). Vas a necesitar hacer tu primer pedido `POST` usando `axios`. Esto es tan fácil como hacer `axios.post`:
+
+```js
+axios.post('/api/route/to/post/to', { /** el contenido de req.body va aquí */ })
+  .then(res => res.data)
+  .then(result => {
+    console.log(result) // la respuesta del servidor.
+  });
+
+```
+
+Cuando hayas terminado deberías ser capaz de crear playlist que persistan ene el backend. Podes confirmarlo visitando http://localhost:1337/api/playlists. También tu front end debería hacer algo con el playlist retornado - quizás loggearlo.
+
+## Todas las Playlists
+
+### La Vista
+
+Queremos que la lista de playlists se muestre en el sidebar. Aquí hay un poco más de JSX para agregar a tu componente `Sidebar` (ponlo por debajo del botón de `+ PLAYLISTS`).
+
+```html
+<hr />
+<ul className="list-unstyled">
+  <li className="playlist-item menu-item">
+    <Link to="FILL_ME_IN">some playlist</Link>
+  </li>
+  <li className="playlist-item menu-item">
+    <Link to="WHERE_TO_GO">another playlist</Link>
+  </li>
+</ul>
+```
+
+### Cargando Todas las Playlists
+
+Ahora necesitamos asegurarnos que cuando nuestra app carga, buscamos todas las playlist de nuestro servidor y tambien hace para que nuestra lista se actualice cuando agregamos una nueva playlist. Tratá de hacerlo por tu cuenta, pero aca hay unos pasos para guiarte si necesitas chequear tus decisiones:
+
+1. Seteá una parte de tu estado de `Main` para guardar un arreglo de playlists.
+|||
+```js
+{
+  playlists: []
+}
+```
+|||
+2. En `Main`, hace un llamado adicional al servidor para buscar todos los playlists y setealos al estado (esto puede ser hecho de la misma manera que actualmente estamos buscando todos los artistas).
+|||
+En el `componentDidMount` de `Main`, vamos a querer hacer un pedido `axios.get('/api/playlists')`,y luego `setState` con el arreglo de playlists. 
+|||
+3. Actualizá el componente `Sidebar` para iterar sobre cada playlist y renderizá cada una (no te preocupes en hacer que el `Link` lleve a algún lugar en especial aún).
+|||
+```JSX
+{
+  playlists.map(playlist => {
+    return (
+      <li key={playlist.id} className="playlist-item menu-item">
+        <Link to="FILL_ME_IN">{playlist.name}</Link>
+      </li>
+    );
+  })
+}
+```
+|||
+
+4. Los pasos de arriba deberían hacer que las playlists aparezcan en el `Sidebar`. Para actualizar la lista cuando creamos una nueva playlist, necesitamos mover el método que hace el pedido `POST` fuera de nuestro `NewPlaylistContainer` a nuestro `AppContainer`, para que podamos actualizar las playlists en nuestro estado cuando nuestro pedido se resuelve.
+|||
+```js
+// we want something like...
+addPlaylist (playlistName) {
+  axios.post('/api/playlists', { name: playlistName })
+    .then(res => res.data)
+    .then(playlist => {
+      this.setState({
+        playlists: [...this.state.playlists, playlist]
+      });
+    });
+}
+```
+|||
+
+5. Podemos luego pasar ese método como prop a nuestro `NewPlaylistContainer` para que pueda invocarlo cuando el submit handler se dispare.
+|||
+```js
+handleSubmit(evt) {
+  evt.preventDefault();
+
+  this.props.addPlaylist(this.state.inputValue);
+}
+```
+|||
+
+### Una sola Playlist
+
+### Componente de una Sola Playlist
+
+Usando el JSX de abajo como un punto de inicio, construí el componente para una sola playlist.
+
+```JSX
+<div>
+  <h3>{ playlist.name }</h3>
+  <Songs songs={playlist.songs} /> {/** Hooray for reusability! */}
+  { playlist.songs && !playlist.songs.length && <small>No songs.</small> }
+  <hr />
+</div>
+```
+Tratá de hacerlo de tal manera que al clickear en una playlist en el sidebar muestre el playlist apropiado. Es dificil igual - así que aquí hay otra guía para ayudarte en tu camino:
+
+1. Crea una nueva `Route` con parametro para el componente `Playlist`
+|||
+```JSX
+<Route path="playlists/:playlistId" component={Playlist} />
+```
+|||
+
+2. Actualizá el `Link` en el `Sidebar` para dirigir al playlist apropiado.
+|||
+```JSX
+{
+  playlists.map(playlist => {
+    return (
+      <li key={playlist.id} className="playlist-item menu-item">
+        <Link to={`/playlists/${playlist.id}`}>{playlist.name}
+      </li>
+    );
+  })
+}
+```
+|||
+
+3. Agrega un nuevo campo al estado para manejar el playlist seleccionado.
+|||
+```js
+{
+  selectedPlaylist: {}
+}
+```
+|||
+
+4. Escribe un método que vaya a recibir el id del playlist, lo busque del servidor, y setee el estado de la playlist seleccionada.
+
+|||
+```js
+ selectPlaylist (playlistId) {
+    axios.get(`/api/playlists/${playlistId}`)
+      .then(res => res.data)
+      .then(playlist => {
+        this.setState({
+          selectedPlaylist: playlist
+        });
+      });
+  }
+```
+|||
+
+5. Usa el método de arriba cuando el componente `Playlist` se monta para setear el estado apropiado. Debería tomar el id del playlist de `match.params`, igual que los componentes `Artist` y `Album`.
+|||
+```js
+componentDidMount () {
+  this.props.selectPlaylist(this.props.playlistId);
+}
+```
+|||
+
+Si llegas a este punto y pasas un tiempo testeando, podes llegar a notar un problema particular cuando cambiamos entre playlists - no parece que se actualiza! Continuá a la siguiente acción para ver que esta pasando aquí.
 
 
 
