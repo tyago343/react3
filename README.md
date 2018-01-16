@@ -214,8 +214,7 @@ render () {
 
 +++JSX Posible
 ```JSX
-const NewPlaylist = function () {
-return (
+const NewPlaylist = () => (
 <div className="well">
   <form className="form-horizontal">
     <fieldset>
@@ -234,7 +233,7 @@ return (
     </fieldset>
   </form>
 </div>
-)}
+);
 ```
 +++
 
@@ -308,10 +307,9 @@ Cuando hayas terminado deberías ser capaz de crear playlist que persistan ene e
 
 ### La Vista
 
-Queremos que la lista de playlists se muestre en el sidebar. Aquí hay un poco más de JSX para agregar a tu componente `Sidebar` (ponlo por debajo del botón de `+ PLAYLISTS`).
+Queremos que la lista de playlists se muestre en el sidebar. Aquí hay un poco más de JSX para agregar a tu componente `Sidebar` (ponlo justo por arriba del botón de `+ PLAYLISTS`).
 
 ```html
-<hr />
 <ul className="list-unstyled">
   <li className="playlist-item menu-item">
     <Link to="FILL_ME_IN">some playlist</Link>
@@ -374,7 +372,6 @@ addPlaylist (playlistName) {
 ```js
 handleSubmit(evt) {
   evt.preventDefault();
-
   this.props.addPlaylist(this.state.inputValue);
 }
 ```
@@ -453,3 +450,106 @@ componentDidMount () {
 |||
 
 Si llegas a este punto y pasas un tiempo testeando, podes llegar a notar un problema particular cuando cambiamos entre playlists - no parece que se actualiza! Continuá a la siguiente acción para ver que esta pasando aquí.
+
+### componentWillReceiveProps
+
+Todo lo demas esta funcionando, pero si tratás de cambiar entre playlists, el componente no se está actualizando.
+
+Estamos buscando una playlist individual en `componentDidMount`, pero cuando cambiamos de una playlist a otra, el componente no se remonta! Recuerda que montarse significa que se coloque en el DOM, dado que el componente ya esta en el DOM, React no lo borra y lo monta otra vez.
+
+Podemos abordar esto de distintas formas. Resolvamos el problema introduciendo un nuevo lifecycle hook - [`componentWillRecieveProps`](https://reactjs.org/docs/react-component.html#componentwillreceiveprops). Al usar este lifecycle hook, podemos comparar nuestras props actual con las próximas props que el componente va a recibir. Por ejemplo, podemos chequear y ver si el id del playlist que estamos reciviendo es diferente del que teniamos antes y, si es así, podemos ir a buscar la nueva playlist y ponerlo en el estado.
+
+**Ten cuidado** - Tenemos que asegurarnos que solo busquemos y re-setiemos la playlist cuando el id cambia. De otra manera, podemos terminar en un loop infinito!
+
+Y ten en cuenta que no estamos reemplazando nuestro `componentDidMount`. Todavía necesitamos eso para la carga inicial, porque `componentWillReceiveProps` no va a funcionar para este caso.
+
+Tratalo! Recuerda de solo chequear la pista si te trabas. Sabrás que lo has logrado cuando la vista se actualiza apropiadamente cuando cambias de playlist a playlist.
+|||
+```js
+componentWillReceiveProps (nextProps) {
+  if (nextProps.playlistId !== this.props.playlistId) { 
+    this.props.selectPlaylist(nextProps.playlistId);
+  } 
+}
+```
+|||
+
+### Auto Redirect
+
+Ahora que tenemos un estado cargado para un solo playlist, hagamos que cuando creamos una nueva playlist, es llevado a la view de esa playlist. Esencialment estamos buscando un "frontend redirect".
+
+Sabías que los props del Router ademas de el objeto `match` tambien envían un objeto `history` el cual podemos manejar el `BrowserHistory`. En él, podemos usar el método `push` para agregar una nueva ruta. [Aquí hay un recordatorio](https://reacttraining.com/react-router/web/api/history)
+
+|||
+```js
+this.props.history.push(`/playlists/${playlist.id}`)
+```
+|||
+
+## Agregar Canciones
+
+### Setea la Vista
+
+Aquí esta el JSX para un lindo componente para seleccionar canciones:
+
+```html
+  <div className="well">
+    <form className="form-horizontal" noValidate name="songSelect">
+      <fieldset>
+        <legend>Add to Playlist</legend>
+        <div className="form-group">
+          <label htmlFor="song" className="col-xs-2 control-label">Song</label>
+          <div className="col-xs-10">
+            <select className="form-control" name="song">
+              <option value={/**SONGID_GOES_HERE*/}>song name</option>
+              <option value={/**SONGID_GOES_HERE*/}>another song name</option>
+            </select>
+          </div>
+        </div>
+        <div className="form-group">
+          <div className="col-xs-10 col-xs-offset-2">
+            <button type="submit" className="btn btn-success">Add Song</button>
+          </div>
+        </div>
+      </fieldset>
+    </form>
+  </div>
+```
+
+Renderealo por debajo de la lista de canciones en el componente `Playlist`. Debería verse como la imagen debajo:
+
+![screenshot4](screenshot4.png)
+
+### Manejar el Estado y el Comportamiento
+
+Ahora necesitamos lidear con el estado local de este formulario también - vamos a querer controlar el valor seleccionado del estado, tener un listener `onChange`... esto suena todo muy familiar. También vas a querer buscar una lisa de todas las canciones del servidor para mostrar en la lista de opciones.
+
+Buena suerte!
+
+### Lidiando con Errores del Servidor
+
+Ya vimos como podemos validar y mostrar errores a los usuarios antes de submitear el formulario, ¿pero qué pasa si algo va mal en nuestro servidor?
+
+Si agregas una canción duplicada a la playlist, eso va a causar que el servidor responda con un error. Podríamos validar esto en el front end (y normalmente, lo hacemos), pero como un challenge extra permitamos a los usuarios hacer esto, y en vez hacer un `catch` del error y mostrar el error como cuando validamos el length de el input del nuevo playlist.
+
+Puntos extra si usas un componente error que compartís con el formulario del nuevo playlist!
+
++++Un Consejo
+Esta el método que agrega una canción retornando algo? Recorda que `axios` requests retornan una Promesa!
+
+## Bonus
+
+### Remover Canciones
+
+Agrega a cada canción del playlist un botón para eliminar la canción del playlist.
+
+### Predictivo
+
+El dropdown de la canción es un embole. Cambialo por un predictivo - si googleas por `react typeaheads`, vas a encontrar varias opciones que pueden ayudarte a implementarlo. También podés construir el tuyo propio - no es tan dificil! (no es tan fácil tampoco...)
+
+### Ordenable
+
+Permití a los usuarios re-ordenar las canciones en su playlist. Comenza actualizando el modelo del backend para que cada cancion en una playlist también tengan un campo correspondiente a su orden en la lista. Asegurate que las canciones se renderen en el orden correcto en la vista. Luego trata de usar una librería como [react-sortable](https://github.com/danielstocks/react-sortable) para que los usuarios puedan fácilmente editar el orden. 
+
+
+
