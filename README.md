@@ -37,7 +37,7 @@ El filter que escribamos se tiene que ver algo así:
 
 #### Luego de typear una entrada
 
-![screenshot](screensho2.png)
+![screenshot](screenshot2.png)
 
 Tu primer instinto puede ser ir y modificar el componente `Artist`. Sin embargo, el componente del artista ya hace su trabajo bastante bien: si le damos una `props.artists`, va a renderizar nuestra lista de artistas. ¿Por qué cambiarla?
 
