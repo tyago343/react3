@@ -28,9 +28,8 @@ export default class Main extends React.Component {
         songs: [],
       },
       playList: [],
-      selectedPlaylist: {
-
-      }
+      selectedPlaylist: {},
+      allSongs:[]
     };
     this.selectAlbum = this.selectAlbum.bind(this);
     this.start = this.start.bind(this);
@@ -41,6 +40,7 @@ export default class Main extends React.Component {
     this.selectArtist = this.selectArtist.bind(this);
     this.addPlaylist = this.addPlaylist.bind(this);
     this.selectPlaylist = this.selectPlaylist.bind(this)
+    this.getSongs = this.getSongs.bind(this)
   }
   addPlaylist(req) {
     return axios
@@ -104,7 +104,13 @@ export default class Main extends React.Component {
         }),
     );
   }
-
+  getSongs(){
+    axios
+      .get(`/api/songs`)
+      .then(res => res.data)
+      .then(songs => this.setState({ allSongs: songs }));
+  }
+  
   start(song, songs) {
     this.setState({ selectedSong: song, currentSongList: songs });
     this.loadSong(song.audioUrl);
@@ -167,7 +173,8 @@ export default class Main extends React.Component {
       artists,
       selectedArtist,
       playList,
-      selectedPlaylist
+      selectedPlaylist,
+      allSongs
     } = this.state;
 
     return (
@@ -193,7 +200,7 @@ export default class Main extends React.Component {
               )}
             />
            
-            <Route path="/playlist/:playlistid" render={({match})=> <SinglePlaylist playlist={selectedPlaylist} playlistId={match.params.playlistid} selectPlaylist={this.selectPlaylist} />}/>
+            <Route path="/playlist/:playlistid" render={({match})=> <SinglePlaylist allSongs={allSongs} getSongs={this.getSongs} playlist={selectedPlaylist} playlistId={match.params.playlistid} selectPlaylist={this.selectPlaylist} />}/>
             <Route
               path="/artists"
               exact
