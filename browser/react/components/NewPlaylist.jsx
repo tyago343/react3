@@ -1,9 +1,6 @@
 import React from 'react';
 
 const NewPlaylist = props => {
-  {
-    console.log(props);
-  }
   return (
     <div className="well">
       <form className="form-horizontal" onSubmit={props.setFather}>

@@ -23,7 +23,7 @@ export default props => (
             {props.playList.map(playlist => {
               return (
                 <li key={playlist.id} className="playlist-item menu-item">
-                  <Link to="FILL_ME_IN">{playlist.name}</Link>
+                  <Link to={`/playlist/${playlist.id}`}>{playlist.name}</Link>
                 </li>
               );
             })}

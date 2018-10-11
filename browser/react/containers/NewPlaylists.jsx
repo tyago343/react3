@@ -9,20 +9,27 @@ export default class NewPlaylists extends React.Component {
     };
     this.createPlaylist = this.createPlaylist.bind(this);
     this.setFather = this.setFather.bind(this);
-    console.log(props);
+    
+   
   }
   createPlaylist(e) {
-    console.log(e.target.value);
+    
     const valor = e.target.value;
     this.setState({ value: valor, flag: true });
     e.preventDefault();
   }
   setFather(e) {
     e.preventDefault();
-    this.props.addPlaylist(this.state.value);
-    this.setState({ value: '' });
-  }
+    this.props.addPlaylist(this.state.value)
+    .then((id)=>{this.setState({ value: '', flag:false }), this.props.history.push(`/playlist/${id}`)}
+    )
+    
+    
 
+    
+    
+  }
+  
   render() {
     return (
       <NewPlaylist
